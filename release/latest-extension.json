@@ -1,0 +1,8 @@
+{
+  "name": "clearmark-extension",
+  "version": "1.0.29",
+  "file": "clearmark-extension-v1.0.29.zip",
+  "sha256": "72891819454366cf5fc9f21e561bc6a0cf0179a34d57cb076e96aa2ae774ff31",
+  "size": 1092502,
+  "source": "dist/extension"
+}
