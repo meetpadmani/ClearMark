@@ -4,6 +4,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import ytdl from '@distube/ytdl-core';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -70,6 +71,45 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     }
   });
 });
+
+// --- YouTube Downloader APIs ---
+app.get('/api/yt/info', async (req, res) => {
+  try {
+    const url = req.query.url;
+    if (!ytdl.validateURL(url)) {
+      return res.status(400).json({ error: 'Invalid YouTube URL' });
+    }
+    const info = await ytdl.getInfo(url);
+    res.json({
+      title: info.videoDetails.title,
+      thumbnail: info.videoDetails.thumbnails[0]?.url,
+      formats: info.formats
+    });
+  } catch (error) {
+    console.error('YT Info Error:', error);
+    res.status(500).json({ error: 'Failed to fetch video info.' });
+  }
+});
+
+app.get('/api/yt/download', (req, res) => {
+  try {
+    const url = req.query.url;
+    const format = req.query.format || 'mp4'; // 'mp4' or 'mp3'
+    
+    if (!ytdl.validateURL(url)) {
+      return res.status(400).json({ error: 'Invalid YouTube URL' });
+    }
+
+    let filter = format === 'mp3' ? 'audioonly' : 'videoandaudio';
+    
+    res.header('Content-Disposition', \`attachment; filename="video.\${format}"\`);
+    ytdl(url, { filter: filter }).pipe(res);
+  } catch (error) {
+    console.error('YT Download Error:', error);
+    res.status(500).send('Error downloading video');
+  }
+});
+// ------------------------------
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(uploadDir));

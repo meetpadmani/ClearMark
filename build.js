@@ -268,7 +268,7 @@ async function serveStaticDevDist(rootDir = 'dist', defaultPort = 4173) {
     console.warn('⚠️ Could not generate SSL certificate. Falling back to HTTP.');
   }
 
-  const handler = (req, res) => {
+  const handler = async (req, res) => {
     let urlPath = '/';
     try {
       urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
@@ -277,10 +277,56 @@ async function serveStaticDevDist(rootDir = 'dist', defaultPort = 4173) {
       res.end('Bad Request');
       return;
     }
+    
+    // --- YouTube Downloader APIs for Dev Server ---
+    if (urlPath === '/api/yt/info') {
+      try {
+        const ytdl = (await import('@distube/ytdl-core')).default;
+        const urlParams = new URL(req.url, 'http://localhost').searchParams;
+        const url = urlParams.get('url');
+        if (!ytdl.validateURL(url)) {
+           res.writeHead(400, { 'Content-Type': 'application/json' }); 
+           res.end(JSON.stringify({ error: 'Invalid URL' }));
+           return;
+        }
+        const info = await ytdl.getInfo(url);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          title: info.videoDetails.title,
+          thumbnail: info.videoDetails.thumbnails[0]?.url,
+          formats: info.formats
+        }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' }); 
+        res.end(JSON.stringify({ error: err.message }));
+      }
+      return;
+    }
+    
+    if (urlPath === '/api/yt/download') {
+      try {
+        const ytdl = (await import('@distube/ytdl-core')).default;
+        const urlParams = new URL(req.url, 'http://localhost').searchParams;
+        const url = urlParams.get('url');
+        const format = urlParams.get('format') || 'mp4';
+        if (!ytdl.validateURL(url)) {
+           res.writeHead(400); res.end('Invalid URL');
+           return;
+        }
+        const filter = format === 'mp3' ? 'audioonly' : 'videoandaudio';
+        res.setHeader('Content-Disposition', `attachment; filename="video.${format}"`);
+        ytdl(url, { filter }).pipe(res);
+      } catch (err) {
+        res.writeHead(500); res.end('Error downloading');
+      }
+      return;
+    }
+    // ----------------------------------------------
+
     // In dev mode, expose the internal single-image debug harness at `/`
     // instead of the public landing entry. The landing page still ships to
     // `dist/index.html` for prod deploys and can be reached at `/index.html`.
-    const devHarnessPath = '/video-preview.html';
+    const devHarnessPath = '/index.html';
     const requestPath =
       urlPath === '/' || urlPath === ''
         ? devHarnessPath
@@ -300,7 +346,7 @@ async function serveStaticDevDist(rootDir = 'dist', defaultPort = 4173) {
     const targetIsDir = targetExists && statSync(targetPath).isDirectory();
 
     if ((!targetExists || targetIsDir) && isSpaRoute) {
-      targetPath = resolve(join(distRoot, 'video-preview.html'));
+      targetPath = resolve(join(distRoot, 'index.html'));
     }
 
     if (!existsSync(targetPath)) {

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5">
+  <title>ClearMark | Crop PDF</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    :root {
+      --bg-color: #EEF0F3;
+      --card-bg: #FFFFFF;
+      --accent-blue: #3B5FE3;
+      --accent-hover: #3151c4;
+      --text-main: #111827;
+      --text-muted: #6B7280;
+      --border-radius: 24px;
+      --shadow-subtle: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+      --font-ui: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    html, body {
+      overflow-x: hidden;
+      width: 100%;
+      position: relative;
+    }
+    
+    body {
+      font-family: var(--font-ui);
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      background-image: radial-gradient(#d1d5db 1.5px, transparent 1.5px);
+      background-size: 24px 24px;
+    }
+
+    /* Decorative Blobs */
+    .blob-static {
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      filter: blur(80px);
+      z-index: -1;
+      opacity: 0.6;
+      border-radius: 50%;
+    }
+    .blob-orange { top: -50px; left: -100px; background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); transform: rotate(-15deg); }
+    .blob-blue { top: -50px; right: -100px; background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); transform: rotate(15deg); }
+
+    /* Header Nav */
+    header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 1.5rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 50;
+    }
+    .brand-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-main); font-weight: 700; font-size: 18px; }
+    .brand-icon { width: 32px; height: 32px; background: var(--text-main); color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; }
+    .nav-links a { color: var(--text-muted); text-decoration: none; font-weight: 600; padding: 8px 16px; border-radius: 8px; transition: background 0.2s, color 0.2s; }
+    .nav-links a:hover { color: var(--text-main); background: rgba(0,0,0,0.05); }
+
+    /* Layout */
+    .app-container {
+      width: 100%;
+      max-width: 900px;
+      padding: 120px 2rem 2rem 2rem;
+      position: relative;
+      z-index: 10;
+      flex: 1;
+    }
+
+    .hero-title {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: #111827;
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+    .hero-subtitle {
+      text-align: center;
+      color: var(--text-muted);
+      margin-bottom: 3rem;
+      font-size: 1.1rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-subtle);
+      padding: 2.5rem;
+      border: 1px solid #E5E7EB;
+      width: 100%;
+      margin-bottom: 2rem;
+    }
+
+    .file-input-wrapper {
+      display: block;
+      border: 2px dashed #D1D5DB;
+      border-radius: 16px;
+      padding: 3rem 2rem;
+      text-align: center;
+      transition: all 0.2s;
+      cursor: pointer;
+      margin-bottom: 1.5rem;
+      background: #F9FAFB;
+    }
+    .file-input-wrapper:hover {
+      border-color: var(--accent-blue);
+      background: #EEF2FF;
+    }
+    .file-input-wrapper input[type="file"] { display: none; }
+    .file-icon { font-size: 3rem; margin-bottom: 1rem; color: var(--text-muted); }
+    
+    .btn-primary {
+      background: var(--accent-blue);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 1rem;
+      width: 100%;
+    }
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      box-shadow: 0 10px 20px rgba(59, 95, 227, 0.2);
+    }
+    .btn-primary:disabled {
+      background: #9CA3AF;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .crop-inputs {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .input-group { display: flex; flex-direction: column; gap: 0.5rem; }
+    .input-group label { font-size: 0.9rem; color: var(--text-muted); font-weight: 500; }
+    .input-group input {
+      background: #F3F4F6;
+      border: 1px solid #E5E7EB;
+      color: var(--text-main);
+      padding: 12px;
+      border-radius: 8px;
+      font-family: var(--font-mono);
+    }
+    .input-group input:focus {
+      outline: none; border-color: var(--accent-blue); background: #FFFFFF;
+    }
+
+    .status {
+      margin-top: 1.5rem;
+      text-align: center;
+      font-weight: 500;
+      color: var(--accent-blue);
+    }
+
+    footer {
+      padding: 3rem 0;
+      width: 100%;
+      border-top: 1px solid #E5E7EB;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 768px) {
+      .app-container { padding: 100px 1rem 1rem 1rem; }
+      .hero-title { font-size: 2rem; }
+      header { padding: 1rem; flex-direction: column; gap: 1rem; }
+      .card { padding: 1.5rem; }
+      .file-input-wrapper { padding: 1.5rem 1rem; }
+      .crop-inputs { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="index.html" class="brand-logo">
+      <div class="brand-icon">C</div>
+      <span>ClearMark</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">← Back to Dashboard</a>
+    </div>
+  </header>
+
+  <main class="app-container">
+    <div class="blob-static blob-orange"></div>
+    <div class="blob-static blob-blue"></div>
+
+    <h1 class="hero-title">Crop PDF</h1>
+    <p class="hero-subtitle">Trim the margins of all pages in a PDF document.</p>
+
+    <!-- CROP SECTION -->
+    <div id="section-crop" class="card">
+      <h2 style="margin-bottom: 1rem;">Crop PDF Pages</h2>
+      <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Enter the margins in points (pts) to trim from the edges.</p>
+      
+      <label class="file-input-wrapper" style="padding: 1.5rem;">
+        <div class="file-icon" style="font-size: 2rem;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto;"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>
+        </div>
+        <p><strong>Select one PDF file</strong></p>
+        <input type="file" id="cropInput" accept="application/pdf">
+      </label>
+      
+      <div id="cropFileName" style="margin-bottom: 1.5rem; color: var(--accent-blue); font-weight: 500;"></div>
+
+      <div class="crop-inputs">
+        <div class="input-group">
+          <label>Left Margin (pts)</label>
+          <input type="number" id="cropLeft" value="0">
+        </div>
+        <div class="input-group">
+          <label>Right Margin (pts)</label>
+          <input type="number" id="cropRight" value="0">
+        </div>
+        <div class="input-group">
+          <label>Top Margin (pts)</label>
+          <input type="number" id="cropTop" value="0">
+        </div>
+        <div class="input-group">
+          <label>Bottom Margin (pts)</label>
+          <input type="number" id="cropBottom" value="0">
+        </div>
+      </div>
+      
+      <button class="btn-primary" id="cropBtn" disabled>Crop PDF</button>
+      <div id="cropStatus" class="status"></div>
+    </div>
+
+  </main>
+
+  <footer>
+    <p>&copy; 2026 ClearMark. Created by Meet Padmani.</p>
+  </footer>
+
+  <script>
+    const { PDFDocument } = PDFLib;
+
+    function triggerDownload(uint8Array, filename) {
+      const blob = new Blob([uint8Array], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    }
+
+    // Crop Logic
+    let cropFile = null;
+    const cropInput = document.getElementById('cropInput');
+    const cropBtn = document.getElementById('cropBtn');
+    const cropStatus = document.getElementById('cropStatus');
+
+    cropInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        cropFile = e.target.files[0];
+        document.getElementById('cropFileName').textContent = `📄 ${cropFile.name}`;
+        cropBtn.disabled = false;
+      }
+    });
+
+    cropBtn.addEventListener('click', async () => {
+      cropStatus.textContent = "Cropping... please wait.";
+      cropBtn.disabled = true;
+      try {
+        const left = parseInt(document.getElementById('cropLeft').value) || 0;
+        const right = parseInt(document.getElementById('cropRight').value) || 0;
+        const top = parseInt(document.getElementById('cropTop').value) || 0;
+        const bottom = parseInt(document.getElementById('cropBottom').value) || 0;
+
+        const arrayBuffer = await cropFile.arrayBuffer();
+        const pdfDoc = await PDFDocument.load(arrayBuffer);
+        const pages = pdfDoc.getPages();
+        
+        pages.forEach(page => {
+          const { width, height } = page.getSize();
+          page.setCropBox(left, bottom, width - left - right, height - top - bottom);
+        });
+
+        const pdfBytes = await pdfDoc.save();
+        triggerDownload(pdfBytes, 'cropped_' + cropFile.name);
+        cropStatus.textContent = "Crop complete! Downloading...";
+      } catch (err) {
+        cropStatus.textContent = "Error: " + err.message;
+      }
+      cropBtn.disabled = false;
+    });
+  </script>
+</body>
+</html>

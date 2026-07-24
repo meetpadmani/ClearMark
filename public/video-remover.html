@@ -481,7 +481,17 @@
     }
 
     /* Header Nav */
-    header { position: absolute; top: 0; left: 0; width: 100%; padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center; z-index: 50; }
+    header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 1.5rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 50;
+    }
     .brand-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-main); font-weight: 700; font-size: 18px; }
     .brand-icon { width: 32px; height: 32px; background: var(--text-main); color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; }
     .nav-links { display: flex; gap: 16px; }
@@ -563,16 +573,16 @@
   </div>
   
   <header>
-      <a href="/" class="brand-logo">
-        <div class="brand-icon">C</div>
-        <span>ClearMark</span>
-      </a>
-      <div class="nav-links">
+    <a href="/" class="brand-logo">
+      <div class="brand-icon">C</div>
+      <span>ClearMark</span>
+    </a>
+    <div class="nav-links">
         <a href="./image-preview.html">Image Remover</a>
         <a href="./index.html" class="active">Video Remover</a>
         <a href="./magic-eraser.html">✨ Magic Eraser</a>
       </div>
-    </header>
+  </header>
 
   <main class="app-container">
     <div class="blob blob-orange"></div>

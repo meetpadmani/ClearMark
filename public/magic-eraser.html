@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5">
+  <title>Magic Eraser - ClearMark</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    :root {
+      --bg-color: #EEF0F3;
+      --card-bg: #FFFFFF;
+      --accent-blue: #3B5FE3;
+      --accent-hover: #3151c4;
+      --text-main: #111827;
+      --text-muted: #6B7280;
+      --border-radius: 24px;
+      --shadow-subtle: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+      --font-ui: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    [hidden] { display: none !important; }
+
+    body {
+      font-family: var(--font-ui);
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-image: radial-gradient(#d1d5db 1.5px, transparent 1.5px);
+      background-size: 24px 24px;
+    }
+
+    .blob {
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      filter: blur(80px);
+      z-index: -1;
+      opacity: 0.6;
+      border-radius: 50%;
+    }
+    .blob-orange { top: -50px; left: -100px; background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); transform: rotate(-15deg); }
+    .blob-blue { top: -50px; right: -100px; background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); transform: rotate(15deg); }
+
+    .app-container {
+      width: 100%;
+      max-width: 1100px;
+      padding: 60px 2rem 2rem 2rem;
+      position: relative;
+      z-index: 10;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-subtle);
+      padding: 2.5rem;
+      width: 100%;
+    }
+    
+    h2 { font-size: 24px; font-weight: 700; margin-bottom: 8px; text-align: center; }
+    p.subtext { color: var(--text-muted); font-size: 14px; text-align: center; margin-bottom: 24px; }
+    
+    button, .btn {
+      font-family: var(--font-ui);
+      cursor: pointer;
+      border: none;
+      border-radius: 100px;
+      font-weight: 600;
+      font-size: 14px;
+      padding: 10px 20px;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-primary { background: var(--accent-blue); color: white; padding: 12px 24px; }
+    .btn-primary:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 10px 20px rgba(59, 95, 227, 0.3); }
+    .btn-outline { background: transparent; border: 1px solid #D1D5DB; color: var(--text-main); }
+    .btn-outline:hover { background: #F3F4F6; }
+
+    .nav-bar { width: 100%; max-width: 1100px; margin: 0 auto; display: flex; gap: 1rem; padding: 2rem 2rem 0; justify-content: center; }
+    .nav-link { text-decoration: none; padding: 8px 16px; border-radius: 20px; color: var(--text-muted); font-weight: 500; transition: all 0.2s; }
+    .nav-link:hover { background: rgba(0,0,0,0.05); color: var(--text-main); }
+    .nav-link.active { background: white; color: var(--accent-blue); box-shadow: var(--shadow-subtle); }
+
+    .hero-title { font-size: 2.5rem; font-weight: 800; text-align: center; margin-bottom: 0.5rem; background: linear-gradient(135deg, #111827 0%, #3B5FE3 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+    .dropzone { border: 2px dashed #E5E7EB; border-radius: 16px; padding: 4rem 2rem; transition: all 0.3s ease; cursor: pointer; text-align: center; }
+    .dropzone:hover { border-color: #A5B4FC; background: #F8FAFC; }
+
+    /* Editor Container */
+    #editorArea { display: none; margin-top: 2rem; }
+    .editor-layout { display: flex; flex-direction: column; gap: 1.5rem; }
+    .toolbar { display: flex; align-items: center; justify-content: space-between; background: #F9FAFB; padding: 1rem 1.5rem; border-radius: 12px; border: 1px solid #E5E7EB; }
+    .brush-controls { display: flex; align-items: center; gap: 1rem; }
+    .canvas-container { position: relative; width: 100%; background: #F3F4F6; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; min-height: 400px; border: 1px solid #E5E7EB; }
+    
+    canvas {
+      position: absolute;
+      top: 0; left: 0;
+      transform-origin: top left;
+    }
+    #imageCanvas { z-index: 1; }
+    #maskCanvas { z-index: 2; cursor: crosshair; }
+    #brushCursor {
+      position: absolute;
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      background: rgba(255, 50, 50, 0.3);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 10;
+      display: none;
+      transform: translate(-50%, -50%);
+    }
+
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 100; }
+    .modal { background: white; padding: 2rem; border-radius: 16px; width: 90%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+    .form-group { margin-bottom: 1.5rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 14px; }
+    .form-group input { width: 100%; padding: 10px; border: 1px solid #D1D5DB; border-radius: 8px; font-family: inherit; }
+  </style>
+</head>
+<body>
+  <div class="blob blob-orange"></div>
+  <div class="blob blob-blue"></div>
+
+  <div class="nav-bar">
+    <a href="image-preview.html" class="nav-link">Watermark Remover</a>
+    <a href="video-preview.html" class="nav-link">Video Remover</a>
+    <a href="magic-eraser.html" class="nav-link active">✨ Magic Eraser</a>
+  </div>
+
+  <div class="app-container">
+    <h1 class="hero-title">AI Magic Eraser</h1>
+    <p class="subtext">Brush over any object to seamlessly remove it using Generative AI</p>
+
+    <!-- Upload State -->
+    <div id="uploadArea" class="card" style="max-width: 650px; margin: 0 auto;">
+      <h2>Upload an Image</h2>
+      <div id="dropzone" class="dropzone">
+        <svg style="width:48px;height:48px;color:#9CA3AF;margin-bottom:1rem" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+        </svg>
+        <h3 style="margin-bottom: 8px;">Drag & Drop image here</h3>
+        <p style="color:#6B7280;font-size:14px;margin-bottom:1rem;">Supports JPG, PNG, WebP</p>
+        <button class="btn-outline" onclick="document.getElementById('fileInput').click()">Browse Files</button>
+        <input type="file" id="fileInput" accept="image/*" hidden>
+      </div>
+    </div>
+
+    <!-- Editor State -->
+    <div id="editorArea" class="card">
+      <div class="editor-layout">
+        
+        <div class="toolbar">
+          <div class="brush-controls">
+            <span style="font-weight: 500; font-size: 14px;">Brush Size:</span>
+            <input type="range" id="brushSize" min="5" max="100" value="30">
+            <span id="brushSizeValue" style="font-size: 14px; color: var(--text-muted); width: 30px;">30px</span>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button id="clearMaskBtn" class="btn-outline">Clear Mask</button>
+            <button id="configApiBtn" class="btn-outline" style="padding: 10px;">⚙️</button>
+            <button id="eraseBtn" class="btn-primary">✨ Erase Object</button>
+          </div>
+        </div>
+
+        <div class="canvas-container" id="canvasWrapper">
+          <canvas id="imageCanvas"></canvas>
+          <canvas id="maskCanvas"></canvas>
+          <div id="brushCursor"></div>
+        </div>
+        
+        <div style="text-align: center;">
+            <button id="resetBtn" class="btn-outline">Choose another image</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Config Modal -->
+  <div id="apiModal" class="modal-overlay">
+    <div class="modal">
+      <h2 style="margin-bottom: 1.5rem;">AI Provider Config</h2>
+      <div class="form-group">
+        <label>Provider</label>
+        <select id="apiProvider" style="width:100%; padding: 10px; border-radius: 8px; border: 1px solid #D1D5DB;">
+          <option value="huggingface">Hugging Face (Free/Limited)</option>
+          <option value="openai">OpenAI (DALL-E 2)</option>
+        </select>
+      </div>
+      <div class="form-group" id="apiKeyGroup">
+        <label>API Key (Saved locally)</label>
+        <input type="password" id="apiKey" placeholder="sk-...">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+        <button id="closeModalBtn" class="btn-outline">Cancel</button>
+        <button id="saveConfigBtn" class="btn-primary">Save Config</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../src/magic-eraser.js"></script>
+</body>
+</html>

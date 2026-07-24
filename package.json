@@ -196,9 +196,16 @@
     ]
   },
   "dependencies": {
+    "@distube/ytdl-core": "^4.16.12",
+    "@jerrycoder/instagram-api": "^2.5.9",
+    "@mrnima/instagram-downloader": "^1.0.0",
+    "btch-downloader": "^6.0.37",
+    "cakkatrok-instagram-downloader": "^2.0.2",
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "instagram-url-direct": "^2.0.7",
     "mediabunny": "^1.46.0",
-    "multer": "^2.2.0"
+    "multer": "^2.2.0",
+    "snapsave-media-downloader": "^2.4.0"
   }
 }

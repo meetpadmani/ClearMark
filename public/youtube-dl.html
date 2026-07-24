@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5">
+  <title>ClearMark | YouTube Downloader</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    :root {
+      --bg-color: #EEF0F3;
+      --card-bg: #FFFFFF;
+      --accent-blue: #3B5FE3;
+      --accent-hover: #3151c4;
+      --text-main: #111827;
+      --text-muted: #6B7280;
+      --border-radius: 24px;
+      --shadow-subtle: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+      --font-ui: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    html, body {
+      overflow-x: hidden;
+      width: 100%;
+      position: relative;
+    }
+    
+    body {
+      font-family: var(--font-ui);
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      background-image: radial-gradient(#d1d5db 1.5px, transparent 1.5px);
+      background-size: 24px 24px;
+    }
+
+    /* Decorative Blobs */
+    .blob-static {
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      filter: blur(80px);
+      z-index: -1;
+      opacity: 0.6;
+      border-radius: 50%;
+    }
+    .blob-orange { top: -50px; left: -100px; background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); transform: rotate(-15deg); }
+    .blob-blue { top: -50px; right: -100px; background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); transform: rotate(15deg); }
+
+    /* Header Nav */
+    header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 1.5rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 50;
+    }
+    .brand-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-main); font-weight: 700; font-size: 18px; }
+    .brand-icon { width: 32px; height: 32px; background: var(--text-main); color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; }
+    .nav-links a { color: var(--text-muted); text-decoration: none; font-weight: 600; padding: 8px 16px; border-radius: 8px; transition: background 0.2s, color 0.2s; }
+    .nav-links a:hover { color: var(--text-main); background: rgba(0,0,0,0.05); }
+
+    /* Layout */
+    .app-container {
+      width: 100%;
+      max-width: 800px;
+      padding: 120px 2rem 2rem 2rem;
+      position: relative;
+      z-index: 10;
+      flex: 1;
+    }
+
+    .hero-title {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: #111827;
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+    .hero-subtitle {
+      text-align: center;
+      color: var(--text-muted);
+      margin-bottom: 3rem;
+      font-size: 1.1rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-subtle);
+      padding: 2.5rem;
+      border: 1px solid #E5E7EB;
+      width: 100%;
+    }
+
+    /* Search Bar */
+    .search-bar {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .search-bar input {
+      flex: 1;
+      background: #F3F4F6;
+      border: 1px solid #E5E7EB;
+      color: var(--text-main);
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-family: var(--font-ui);
+      font-size: 1.1rem;
+      transition: all 0.2s;
+    }
+    .search-bar input:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      background: #FFFFFF;
+      box-shadow: 0 0 0 4px rgba(59, 95, 227, 0.1);
+    }
+    .btn-primary {
+      background: var(--accent-blue);
+      color: white;
+      border: none;
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 1.1rem;
+    }
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(59, 95, 227, 0.2);
+    }
+    .btn-primary:disabled {
+      background: #9CA3AF;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* Result Info */
+    #resultArea {
+      display: none;
+      animation: fadeIn 0.4s ease;
+      margin-top: 2rem;
+      border-top: 1px solid #E5E7EB;
+      padding-top: 2rem;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .video-info {
+      display: flex;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .video-thumbnail {
+      width: 200px;
+      height: 112px;
+      border-radius: 12px;
+      object-fit: cover;
+      background: #F3F4F6;
+    }
+    .video-details {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .video-title {
+      font-weight: 700;
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+      line-height: 1.4;
+      color: #1F2937;
+    }
+    
+    .download-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .btn-download {
+      background: #F9FAFB;
+      border: 1px solid #E5E7EB;
+      color: var(--text-main);
+      padding: 16px;
+      border-radius: 16px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-download:hover {
+      background: #EEF2FF;
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+    }
+    
+    .loader {
+      display: none;
+      text-align: center;
+      margin-top: 2rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .loader.active { display: block; }
+    .error-msg {
+      color: #EF4444;
+      text-align: center;
+      margin-top: 1rem;
+      font-weight: 500;
+      background: #FEF2F2;
+      padding: 12px;
+      border-radius: 8px;
+      display: none;
+    }
+
+    footer {
+      padding: 3rem 0;
+      width: 100%;
+      border-top: 1px solid #E5E7EB;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 600px) {
+      .search-bar { flex-direction: column; }
+      .video-info { flex-direction: column; }
+      .video-thumbnail { width: 100%; height: auto; aspect-ratio: 16/9; }
+      .btn-download { flex-direction: row; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="index.html" class="brand-logo">
+      <div class="brand-icon">C</div>
+      <span>ClearMark</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">← Back to Dashboard</a>
+    </div>
+  </header>
+
+  <main class="app-container">
+    <div class="blob-static blob-orange"></div>
+    <div class="blob-static blob-blue"></div>
+
+    <h1 class="hero-title">YouTube Downloader</h1>
+    <p class="hero-subtitle">Extract high-quality video or audio directly from any YouTube link.</p>
+
+    <div class="card">
+      <form class="search-bar" id="searchForm">
+        <input type="url" id="ytUrl" placeholder="Paste YouTube link here..." required>
+        <button type="submit" class="btn-primary" id="fetchBtn">Fetch Video</button>
+      </form>
+
+      <div class="loader" id="loader">
+        <p>Analyzing video... please wait.</p>
+      </div>
+      
+      <div class="error-msg" id="errorMsg"></div>
+
+      <div id="resultArea">
+        <div class="video-info">
+          <img src="" alt="Thumbnail" id="thumb" class="video-thumbnail">
+          <div class="video-details">
+            <h3 class="video-title" id="title">Video Title</h3>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">Select a format to download.</p>
+          </div>
+        </div>
+        
+        <div class="download-options">
+          <button class="btn-download" onclick="downloadFile('mp4')">
+            <span style="font-size: 24px;">🎬</span>
+            Download Video (MP4)
+          </button>
+          <button class="btn-download" onclick="downloadFile('mp3')">
+            <span style="font-size: 24px;">🎵</span>
+            Download Audio (MP3)
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 ClearMark. Created by Meet Padmani.</p>
+  </footer>
+
+  <script>
+    const form = document.getElementById('searchForm');
+    const urlInput = document.getElementById('ytUrl');
+    const fetchBtn = document.getElementById('fetchBtn');
+    const loader = document.getElementById('loader');
+    const errorMsg = document.getElementById('errorMsg');
+    const resultArea = document.getElementById('resultArea');
+    
+    let currentUrl = '';
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const url = urlInput.value.trim();
+      if (!url) return;
+
+      currentUrl = url;
+      
+      fetchBtn.disabled = true;
+      loader.classList.add('active');
+      errorMsg.style.display = 'none';
+      resultArea.style.display = 'none';
+
+      try {
+        const response = await fetch(`/api/yt/info?url=\${encodeURIComponent(url)}`);
+        let data;
+        try {
+            data = await response.json();
+        } catch(err) {
+            throw new Error("Server did not return valid JSON. Are you running the correct server? Ensure you restarted it.");
+        }
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch video');
+        }
+
+        document.getElementById('title').textContent = data.title;
+        document.getElementById('thumb').src = data.thumbnail || 'https://via.placeholder.com/200x112?text=No+Thumbnail';
+        
+        resultArea.style.display = 'block';
+      } catch (err) {
+        errorMsg.textContent = err.message;
+        errorMsg.style.display = 'block';
+      } finally {
+        fetchBtn.disabled = false;
+        loader.classList.remove('active');
+      }
+    });
+
+    function downloadFile(format) {
+      if (!currentUrl) return;
+      const dlUrl = `/api/yt/download?url=\${encodeURIComponent(currentUrl)}&format=\${format}`;
+      const a = document.createElement('a');
+      a.href = dlUrl;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  </script>
+</body>
+</html>
